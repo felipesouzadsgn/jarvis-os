@@ -4,6 +4,27 @@ const JarvisCore = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const chatList = [
+    { name: 'Senhor Felipe', id: '+5513996487696', type: 'contact', last: 'Online', status: 'Owner' },
+    { name: 'Street', id: '+5513996550869', type: 'contact', last: 'Brother', status: 'Active' },
+    { name: 'Beca', id: 'beca-contact', type: 'contact', last: 'Jarvis Family', status: 'Offline' },
+    { name: 'Jarvis - Family', id: '120363404792156617@g.us', type: 'group', last: 'Beca: Gostei do Word!' },
+    { name: 'Lovable', id: '120363408076696985@g.us', type: 'group', last: '🛒 Lista processada.' },
+    { name: 'Jarvis - Brothers', id: '120363407570016591@g.us', type: 'group', last: 'Street: Bora?' },
+    { name: 'Chatbot - Otávio FBO', id: '120363404566261176@g.us', type: 'group', last: 'Relatório Ads enviado.' },
+    { name: 'Implementação - Lúcia FBO', id: '120363422052288110@g.us', type: 'group', last: 'Pagamento confirmado.' },
+    { name: 'Implementação - Rebeca FBO', id: '120363405979229116@g.us', type: 'group', last: 'Setup inicial concluído.' },
+    { name: 'Implementação - Patrícia FBO', id: '120363423696679274@g.us', type: 'group', last: 'Aguardando feedback.' },
+    { name: 'Implementação - Adriana FBO', id: '120363405201794127@g.us', type: 'group', last: 'Nova campanha ativa.' },
+    { name: 'Implementação - Solange FBO', id: '120363405010555660@g.us', type: 'group', last: 'Financeiro pendente.' },
+    { name: 'Implementação - Gessica FBO', id: '120363426294182523@g.us', type: 'group', last: 'FBO Ativado.' },
+    { name: 'Implementação - Glaucia FBO', id: '120363422559291345@g.us', type: 'group', last: 'Reunião agendada.' },
+    { name: 'Jarvis Test', id: '120363423385093104@g.us', type: 'group', last: 'Debug mode enabled.' },
+    { name: 'Mark-X', id: '120363407535344491@g.us', type: 'group', last: 'Update core.' }
+  ];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -162,10 +183,10 @@ const JarvisCore = () => {
            {activeTab === 'crm' && (
              <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-1 h-full md:min-w-max">
                 {[
-                  { label: 'Backlog', clients: [] },
-                  { label: 'Setup', clients: ['Rebeca_Fbo'] },
-                  { label: 'Active', clients: ['Otavio_Fbo', 'Lucia_Fbo'] },
-                  { label: 'Pending', clients: ['Solange_Fbo'] }
+                  { label: 'Backlog', clients: ['Maria Damasceno', 'Pedrina'] },
+                  { label: 'Setup', clients: ['Rebeca_Fbo', 'Gessica_Fbo'] },
+                  { label: 'Active', clients: ['Otavio_Fbo', 'Lucia_Fbo', 'Adriana_Fbo'] },
+                  { label: 'Pending', clients: ['Solange_Fbo', 'Fabiana_Fbo', 'Fatima'] }
                 ].map((col, i) => (
                   <div key={i} className="w-full md:w-80 flex flex-col">
                      <h4 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 md:mb-6 px-2">{col.label}</h4>
@@ -187,26 +208,163 @@ const JarvisCore = () => {
            )}
 
            {activeTab === 'whatsapp' && (
-             <div className="h-full flex flex-col border border-zinc-900 bg-zinc-950/10 overflow-hidden">
-                <div className="p-6 md:p-8 border-b border-zinc-900 flex justify-between items-center bg-[#09090b]">
-                   <h4 className="text-[10px] font-black uppercase tracking-[0.4em]">WhatsApp_Control_Center</h4>
-                   <span className="text-[8px] mono text-zinc-600 uppercase tracking-widest hidden md:block">Protocol: WhatsApp_Cloud_v18</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-6">
-                   {[
-                     { name: 'Otavio FBO', id: '120363404566261176@g.us', last: 'Jarvis, me dê um exemplo...' },
-                     { name: 'Fabiana FBO', id: '120363405079575043@g.us', last: 'Pendente acerto mensal.' },
-                     { name: 'Lovable (Grupo)', id: '120363408076696985@g.us', last: '🛒 Lista processada.' },
-                     { name: 'Rebeca FBO', id: '120363405979229116@g.us', last: 'AW-17916637812' }
-                   ].map((chat, i) => (
-                     <div key={i} className="bg-zinc-900/20 border border-zinc-900 p-4 md:p-6 flex justify-between items-center group cursor-pointer hover:border-zinc-500 transition-all">
-                        <div className="flex flex-col">
-                           <span className="text-xs font-bold uppercase tracking-widest">{chat.name}</span>
-                           <span className="text-[8px] mono text-zinc-600 mt-1 uppercase tracking-tighter truncate md:w-auto w-40">{chat.last}</span>
+             <div className="h-full flex flex-col md:flex-row border border-zinc-900 bg-zinc-950/10 overflow-hidden">
+                {/* Chat Sidebar/List */}
+                <div className={`flex-col ${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-zinc-900 bg-[#09090b]`}>
+                  <div className="p-6 border-b border-zinc-900">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] mb-4 text-zinc-500">Communications</h4>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="Search_Entities..." 
+                        className="w-full bg-zinc-900/50 border border-zinc-800 text-[10px] px-3 py-2 focus:outline-none focus:border-zinc-600 uppercase tracking-widest placeholder:text-zinc-700"
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    {chatList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((chat, i) => (
+                      <div 
+                        key={i} 
+                        onClick={() => setSelectedChat(chat)}
+                        className={`p-5 border-b border-zinc-900/50 cursor-pointer transition-all hover:bg-zinc-900/40 group ${selectedChat?.id === chat.id ? 'bg-zinc-900/60 border-l-2 border-white' : ''}`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className={`text-[10px] font-bold uppercase tracking-widest ${selectedChat?.id === chat.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{chat.name}</span>
+                          <span className="text-[7px] mono text-zinc-600 uppercase">{chat.type}</span>
                         </div>
-                        <div className="text-[8px] font-black uppercase text-zinc-500 bg-zinc-950 px-2 py-1 border border-zinc-900 group-hover:text-white transition-colors">Open_Chat</div>
-                     </div>
-                   ))}
+                        <p className="text-[9px] text-zinc-600 truncate uppercase tracking-tighter">{chat.last}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Chat Window */}
+                <div className={`flex-1 flex-col ${selectedChat ? 'flex' : 'hidden md:flex'} bg-zinc-950/20`}>
+                  {selectedChat ? (
+                    <>
+                      <div className="p-4 md:p-6 border-b border-zinc-900 flex justify-between items-center bg-[#09090b]">
+                        <div className="flex items-center space-x-4">
+                          <button onClick={() => setSelectedChat(null)} className="md:hidden text-zinc-500">
+                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                          </button>
+                          <div>
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-white">{selectedChat.name}</h4>
+                            <span className="text-[8px] mono text-zinc-500 uppercase tracking-widest">{selectedChat.id} // {selectedChat.status || 'STABLE'}</span>
+                          </div>
+                        </div>
+                        <div className="flex space-x-4">
+                           <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse">
+                        <div className="space-y-4">
+                           <div className="bg-zinc-900/40 border border-zinc-800 p-4 max-w-[80%] self-start">
+                              <p className="text-[10px] text-zinc-300 leading-relaxed uppercase tracking-tight">System_Note: Secure connection established. All data is end-to-end encrypted under Jarvis_Protocol_v4.</p>
+                              <span className="text-[7px] mono text-zinc-600 mt-2 block">19:55:12</span>
+                           </div>
+                           
+                           <div className="bg-white/5 border border-white/10 p-4 max-w-[80%] ml-auto">
+                              <p className="text-[10px] text-white leading-relaxed uppercase tracking-tight">Status report: Core is active. Monitoring {selectedChat.name} for incoming directives.</p>
+                              <span className="text-[7px] mono text-zinc-400 mt-2 block text-right">{time}</span>
+                           </div>
+                        </div>
+                      </div>
+
+                      <div className="p-6 border-t border-zinc-900 bg-[#09090b]">
+                        <div className="flex space-x-4">
+                           <input 
+                             type="text" 
+                             placeholder={`TRANSMIT_TO_${selectedChat.name.replace(/\s+/g, '_').toUpperCase()}...`} 
+                             className="flex-1 bg-zinc-900/50 border border-zinc-800 text-[10px] px-4 py-3 focus:outline-none focus:border-zinc-500 uppercase tracking-[0.2em] placeholder:text-zinc-700 text-white"
+                           />
+                           <button className="bg-white text-black text-[10px] font-black uppercase px-6 tracking-widest hover:bg-zinc-200 transition-colors">Send</button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-20">
+                       <div className="w-12 h-12 border border-zinc-500 flex items-center justify-center">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="animate-spin-slow"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+                       </div>
+                       <p className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-400">Select_Entity_To_Initialize_Comms</p>
+                    </div>
+                  )}
+                </div>
+             </div>
+           )}
+
+           {activeTab === 'projects' && (
+             <div className="max-w-4xl mx-auto space-y-12">
+                <div className="flex justify-between items-end border-b border-zinc-900 pb-8">
+                   <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Active_Operations</h3>
+                   <span className="text-[8px] mono text-zinc-800 uppercase tracking-widest">Total: 4 Projects</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { name: 'Wave Company', desc: 'Branding & Web Development', progress: 75, deadline: '13/02 21:30', status: 'CRITICAL' },
+                    { name: 'FSD - Fábrica de Design', desc: 'Design Agency Operations', progress: 40, deadline: 'TBD', status: 'STABLE' },
+                    { name: 'Clientes FBO', desc: 'CRM & Lead Management', progress: 90, deadline: 'Ongoing', status: 'ACTIVE' },
+                    { name: 'Organização Financeira', desc: '2026 Fiscal Governance', progress: 20, deadline: '31/12', status: 'STANDBY' }
+                  ].map((p, i) => (
+                    <div key={i} className="bg-zinc-950/40 border border-zinc-900 p-8 hover:border-zinc-700 transition-all group">
+                       <div className="flex justify-between items-start mb-6">
+                          <div>
+                             <h4 className="text-sm font-bold uppercase tracking-widest mb-1">{p.name}</h4>
+                             <p className="text-[9px] text-zinc-500 uppercase tracking-tighter">{p.desc}</p>
+                          </div>
+                          <span className={`text-[7px] font-black px-2 py-1 border ${p.status === 'CRITICAL' ? 'border-white text-white' : 'border-zinc-800 text-zinc-600'}`}>{p.status}</span>
+                       </div>
+                       <div className="space-y-4">
+                          <div className="flex justify-between items-end text-[8px] mono text-zinc-600 uppercase">
+                             <span>Progress</span>
+                             <span>{p.progress}%</span>
+                          </div>
+                          <div className="h-[2px] bg-zinc-900 w-full">
+                             <div className="h-full bg-white transition-all duration-1000" style={{ width: `${p.progress}%` }}></div>
+                          </div>
+                          <div className="flex justify-between items-center pt-4">
+                             <span className="text-[8px] font-bold text-zinc-700 uppercase">Deadline: {p.deadline}</span>
+                             <button className="text-[8px] font-black uppercase text-zinc-500 group-hover:text-white transition-colors">Details_&gt;</button>
+                          </div>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+             </div>
+           )}
+
+           {activeTab === 'system' && (
+             <div className="h-full flex flex-col space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <div className="bg-zinc-950/40 border border-zinc-900 p-8 space-y-6">
+                      <h4 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.4em]">Hardware_Status</h4>
+                      <div className="space-y-4">
+                         {['CPU_LOAD', 'MEM_USAGE', 'CORE_TEMP'].map((stat, i) => (
+                           <div key={i} className="space-y-2">
+                              <div className="flex justify-between text-[8px] mono text-zinc-500">
+                                 <span>{stat}</span>
+                                 <span>{Math.floor(Math.random() * 30) + 10}%</span>
+                              </div>
+                              <div className="h-[1px] bg-zinc-900 w-full"><div className="h-full bg-zinc-700 w-1/4"></div></div>
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+                   <div className="md:col-span-2 bg-[#050505] border border-zinc-900 p-8 font-mono text-[10px] text-zinc-500 space-y-4 overflow-hidden h-64 relative">
+                      <h4 className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-4">Kernel_Live_Logs</h4>
+                      <div className="space-y-1">
+                        <p className="text-zinc-400">[OK] SYSTEM_INIT_SUCCESS</p>
+                        <p>[INFO] JARVIS_CORE_V4_LOADED</p>
+                        <p>[INFO] WHATSAPP_SOCKET_CONNECTED</p>
+                        <p>[WARN] CRM_CACHE_MISMATCH - AUTO_FIXING...</p>
+                        <p className="text-white">[OK] MEMORY_SYNC_COMPLETE</p>
+                        <p>[INFO] USER_ENTITY_VERIFIED: FELIPE</p>
+                        <p>[INFO] UPTIME: 14:22:05</p>
+                        <p className="animate-pulse">_</p>
+                      </div>
+                   </div>
                 </div>
              </div>
            )}
