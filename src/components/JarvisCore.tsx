@@ -6,27 +6,83 @@ const JarvisCore = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const chatList = [
-    { name: 'Senhor Felipe', id: '+5513996487696', type: 'contact', last: 'Online', status: 'Owner' },
-    { name: 'Street', id: '+5513996550869', type: 'contact', last: 'Brother', status: 'Active' },
-    { name: 'Beca', id: 'beca-contact', type: 'contact', last: 'Jarvis Family', status: 'Offline' },
-    { name: 'Jarvis - Family', id: '120363404792156617@g.us', type: 'group', last: 'Beca: Gostei do Word!' },
-    { name: 'Lovable', id: '120363408076696985@g.us', type: 'group', last: '🛒 Lista processada.' },
-    { name: 'Jarvis - Brothers', id: '120363407570016591@g.us', type: 'group', last: 'Street: Bora?' },
-    { name: 'Chatbot - Otávio FBO', id: '120363404566261176@g.us', type: 'group', last: 'Relatório Ads enviado.' },
-    { name: 'Implementação - Lúcia FBO', id: '120363422052288110@g.us', type: 'group', last: 'Pagamento confirmado.' },
-    { name: 'Implementação - Rebeca FBO', id: '120363405979229116@g.us', type: 'group', last: 'Setup inicial concluído.' },
-    { name: 'Implementação - Patrícia FBO', id: '120363423696679274@g.us', type: 'group', last: 'Aguardando feedback.' },
-    { name: 'Implementação - Adriana FBO', id: '120363405201794127@g.us', type: 'group', last: 'Nova campanha ativa.' },
-    { name: 'Implementação - Solange FBO', id: '120363405010555660@g.us', type: 'group', last: 'Financeiro pendente.' },
-    { name: 'Implementação - Gessica FBO', id: '120363426294182523@g.us', type: 'group', last: 'FBO Ativado.' },
-    { name: 'Implementação - Glaucia FBO', id: '120363422559291345@g.us', type: 'group', last: 'Reunião agendada.' },
-    { name: 'Jarvis Test', id: '120363423385093104@g.us', type: 'group', last: 'Debug mode enabled.' },
-    { name: 'Mark-X', id: '120363407535344491@g.us', type: 'group', last: 'Update core.' }
-  ];
+  const callOpenClaw = async (action, params = {}) => {
+    try {
+      const response = await fetch('/api/openclaw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, params })
+      });
+      const data = await response.json();
+      return data.result;
+    } catch (error) {
+      console.error('OpenClaw Error:', error);
+      return null;
+    }
+  };
+
+  const fetchChats = async () => {
+    const result = await callOpenClaw('sessions_list');
+    if (result && result.sessions) {
+      setChats(result.sessions.map(s => ({
+        id: s.key,
+        name: s.displayName || s.key,
+        last: s.lastMessage?.text || 'No messages',
+        type: s.kind === 'group' ? 'group' : 'contact',
+        status: s.channel,
+        sessionId: s.sessionId
+      })));
+    }
+  };
+
+  const fetchMessages = async (chat) => {
+    if (!chat) return;
+    const result = await callOpenClaw('sessions_history', { sessionKey: chat.id });
+    if (result && result.messages) {
+      setMessages(result.messages);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!messageText.trim() || !selectedChat) return;
+    setIsLoading(true);
+    
+    // Tenta enviar mensagem
+    await callOpenClaw('message', {
+      action: 'send',
+      to: selectedChat.id.split(':').pop(), // Pega o número ou ID do grupo
+      message: messageText,
+      channel: 'whatsapp'
+    });
+
+    setMessageText('');
+    await fetchMessages(selectedChat);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
+    fetchChats();
+    const interval = setInterval(fetchChats, 10000); // Atualiza lista a cada 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (selectedChat) {
+      fetchMessages(selectedChat);
+      const interval = setInterval(() => fetchMessages(selectedChat), 5000); // Polling de mensagens
+      return () => clearInterval(interval);
+    } else {
+      setMessages([]);
+    }
+  }, [selectedChat]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString());
     }, 1000);
@@ -223,7 +279,7 @@ const JarvisCore = () => {
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {chatList.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((chat, i) => (
+                    {chats.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((chat, i) => (
                       <div 
                         key={i} 
                         onClick={() => setSelectedChat(chat)}
@@ -260,15 +316,20 @@ const JarvisCore = () => {
                       
                       <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse">
                         <div className="space-y-4">
-                           <div className="bg-zinc-900/40 border border-zinc-800 p-4 max-w-[80%] self-start">
-                              <p className="text-[10px] text-zinc-300 leading-relaxed uppercase tracking-tight">System_Note: Secure connection established. All data is end-to-end encrypted under Jarvis_Protocol_v4.</p>
-                              <span className="text-[7px] mono text-zinc-600 mt-2 block">19:55:12</span>
-                           </div>
-                           
-                           <div className="bg-white/5 border border-white/10 p-4 max-w-[80%] ml-auto">
-                              <p className="text-[10px] text-white leading-relaxed uppercase tracking-tight">Status report: Core is active. Monitoring {selectedChat.name} for incoming directives.</p>
-                              <span className="text-[7px] mono text-zinc-400 mt-2 block text-right">{time}</span>
-                           </div>
+                           {messages.length === 0 && (
+                              <div className="text-center py-10 opacity-20">
+                                 <p className="text-[10px] uppercase tracking-[0.4em]">No_Messages_In_Buffer</p>
+                              </div>
+                           )}
+                           {messages.slice().reverse().map((msg, i) => (
+                              <div key={i} className={`p-4 max-w-[80%] ${msg.role === 'user' ? 'bg-white/5 border border-white/10 ml-auto' : 'bg-zinc-900/40 border border-zinc-800 self-start'}`}>
+                                 <p className="text-[10px] text-zinc-300 leading-relaxed uppercase tracking-tight whitespace-pre-wrap">{msg.text}</p>
+                                 <div className="mt-2 flex justify-between items-center">
+                                    <span className="text-[7px] mono text-zinc-600 uppercase">{msg.from || msg.role}</span>
+                                    <span className="text-[7px] mono text-zinc-600 uppercase">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                                 </div>
+                              </div>
+                           ))}
                         </div>
                       </div>
 
@@ -276,10 +337,20 @@ const JarvisCore = () => {
                         <div className="flex space-x-4">
                            <input 
                              type="text" 
+                             value={messageText}
+                             onChange={(e) => setMessageText(e.target.value)}
+                             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                              placeholder={`TRANSMIT_TO_${selectedChat.name.replace(/\s+/g, '_').toUpperCase()}...`} 
                              className="flex-1 bg-zinc-900/50 border border-zinc-800 text-[10px] px-4 py-3 focus:outline-none focus:border-zinc-500 uppercase tracking-[0.2em] placeholder:text-zinc-700 text-white"
+                             disabled={isLoading}
                            />
-                           <button className="bg-white text-black text-[10px] font-black uppercase px-6 tracking-widest hover:bg-zinc-200 transition-colors">Send</button>
+                           <button 
+                             onClick={sendMessage}
+                             disabled={isLoading || !messageText.trim()}
+                             className="bg-white text-black text-[10px] font-black uppercase px-6 tracking-widest hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                           >
+                              {isLoading ? 'Sending...' : 'Send'}
+                           </button>
                         </div>
                       </div>
                     </>
